@@ -11,7 +11,7 @@ macro_rules! print {
 #[macro_export]
 macro_rules! println {
     ($fmt: literal $(, $($arg: tt)+)?) => {
-        $crate::console::printf::print(format_args!(concat!($fmt, "\n") $(, $($arg)+)?));
+        $crate::console::printf::print(format_args!(concat!($fmt, "\n") $(, $($arg)+)?))
     }
 }
 

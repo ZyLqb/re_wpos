@@ -9,9 +9,11 @@ const SBI_REMOTE_FENCE_I: usize = 5;
 const SBI_REMOTE_SFENCE_VMA: usize = 6;
 const SBI_REMOTE_SFENCE_VMA_ASID: usize = 7;
 const SBI_SHUTDOWN: usize = 8;
-const SBI_EXT_HSM :usize =0x48534D;
-
-
+const SBI_EXT_HSM : usize =0x48534D;
+const SBI_EXT_HSM_HART_START: usize = 0;
+const SBI_EXT_HSM_HART_STOP: usize = 1;
+const SBI_EXT_HSM_HART_GET_STATUS: usize = 2;
+const SBI_EXT_HSM_HART_SUSPEND: usize = 3;
 #[inline(always)]
 fn sbi_call(sbi_type: usize, arg0: usize, arg1: usize, arg2: usize , arg3:usize) -> usize {
     let mut ret;
@@ -36,9 +38,22 @@ pub fn shutdown() -> ! {
     sbi_call(SBI_SHUTDOWN, 0, 0, 0,0);
     panic!("It should shutdown!");
 }
-pub fn sbi_hsm_hart_start(hart_id:usize){
-    let i= sbi_call(SBI_EXT_HSM, hart_id, 0x80200000, 64, 0x0);
+pub fn sbi_hsm_hart_start(hart_id:usize) -> usize {
+    sbi_call(SBI_EXT_HSM, hart_id, 0x80200000, 64, SBI_EXT_HSM_HART_START)
 }
+
+pub fn sbi_hsm_hart_stop(hart_id:usize) -> usize{
+    sbi_call(SBI_EXT_HSM, hart_id, 0, 64, SBI_EXT_HSM_HART_STOP)
+}
+
+pub fn sbi_hsm_hart_suspend(hart_id:usize) -> usize{
+    sbi_call(SBI_EXT_HSM, hart_id, 0, 64, SBI_EXT_HSM_HART_SUSPEND)
+}
+
+pub fn sbi_hsm_hart_get_status(hart_id:usize) -> usize{
+    sbi_call(SBI_EXT_HSM, hart_id, 0, 64, SBI_EXT_HSM_HART_GET_STATUS)
+}
+
 pub fn set_timer(time_value:usize){
     sbi_call(SBI_SET_TIMER,time_value ,0,0,0);
     //println!("sbi call {}", i);

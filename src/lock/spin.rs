@@ -63,13 +63,13 @@ impl<T> SpinLock<T> {
                 CPUS.my_cpu(),
                 Ordering::Acquire,
                 Ordering::Relaxed
-            ).is_err(){
-                core::hint::spin_loop()
+            ).is_ok(){
+                break SpinLockGurd { 
+                    spinlock: self,
+                    intr_lock, 
+                };
             }
-            break SpinLockGurd { 
-                spinlock: self,
-                intr_lock, 
-            };
+            core::hint::spin_loop();
         }
     }
 
