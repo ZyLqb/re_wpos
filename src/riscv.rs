@@ -613,3 +613,11 @@ pub mod pteflags {
     pub const PTE_X: usize = 1 << 3;
     pub const PTE_U: usize = 1 << 4; // user can access
 }
+
+pub mod sv39 {
+    use super::PGSHIFT;
+    pub const PA_WIDTH: usize = 56;
+    pub const VA_WIDTH: usize = 39;
+    pub const PPN: usize = PA_WIDTH - PGSHIFT;
+    pub const VPN: usize = VA_WIDTH - PGSHIFT;
+}

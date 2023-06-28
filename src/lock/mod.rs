@@ -4,7 +4,7 @@
 //TODO #2: 实现OnceLock --complated(L19ht)!!!
 //TODO #3: 互斥锁的实现 
 //TODO #4: 实现LazyLock --complated(L19ht)!!!
-//TODO #5: 实现
+//TODO #5: 实现屏障
 mod mutex;
 mod spin;
 mod once_lock;

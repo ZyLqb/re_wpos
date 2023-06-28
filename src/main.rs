@@ -14,17 +14,17 @@ mod riscv;
 mod kalloc;
 mod vm;
 mod memlayout;
-
 #[macro_use]
 extern crate alloc;
 use core::{arch::global_asm, sync::atomic::{AtomicBool,Ordering}};
-
-use alloc::{string::ToString, borrow::ToOwned};
+use alloc::{sync::Arc};
 use lock::Once;
 use process::NCPU;
 use lock::LazyLock;
 use lock::{RwLock,ReadGurd,WriteGurd};
-use crate::{lock::SpinLock, process::cpu::CPUS, sbi::r_tp, riscv::intr_off};
+use kalloc::{pages::*,pagealloc::*};
+use alloc::collections::BTreeSet;
+use crate::{lock::SpinLock, process::cpu::CPUS, sbi::r_tp, riscv::intr_off, kalloc::pagealloc};
 static STARTED: AtomicBool = AtomicBool::new(false);
 //将entry.rs 加入代码
 global_asm!(include_str!("entry.s"));
@@ -34,13 +34,19 @@ fn rust_main() {
     sbi::thread_start();
     let thread_id = r_tp();
     if thread_id == 0 {
+        //utiles::clear_bss();
         //heap init 
-        utiles::clear_bss();
         kalloc::init_heap();
+        //page alloc init
+        pagealloc::page_init();
+
+        let page = PAGE_ALLOCER.alloc();
+        println!("pages {:#x}",*page);
         println!("Thread {} start !!!",thread_id);
         STARTED.store(true, Ordering::SeqCst);
     }else {
         loop {if STARTED.load(Ordering::SeqCst){break;}}
         println!("Thread {} start !!!",thread_id);
     }
+    loop {}
 }
