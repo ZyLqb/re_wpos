@@ -1,6 +1,13 @@
 
 //TODO 写代码注释
-use core::ops::Deref;
+//使用这个方法的好处可能是空间利用率会稍微高一点
+//FIXME#5(Who)目前分配的时候需要生成一个Guard，不能直接用Arc的原因是
+//我们需要将释放的地址放入free队列里面。
+//所以其实是AllPages的设计有问题，暂时没想到一个好的方法。
+//看到别人的一种解决方法是不用页分配器，直接用Box（Arc）分配一个页的大小
+//创建一个分配trait,然后为每个结构体impl这个结构体
+//复用这个页的时候使用clone
+use core::ops::{Deref, DerefMut};
 use alloc::{vec::*, collections::BTreeMap};
 use alloc::sync::Arc;
 use crate::{lock::SpinLock, memlayout::{PHYSTOP, KERNBASE}, riscv::PGSIZE};
@@ -16,11 +23,16 @@ pub struct AllPages {
 }
 #[derive(Clone)]
 pub struct PageGurd {
+    //TODO:可以在这里再加一个成员用于表示PPageNum或者物理地址，
+    //结构体传入一个T泛型，类似 Box的声明方式
+    //这样就可以类似Box一样使用PageGurd了
+    //pub point: * const T 这样写？
     pub inner:Arc<PPageNum>
+    
 }
 impl PageGurd {
     fn new(inner:Arc<PPageNum>) -> Self {
-        Self { inner }   
+        PAGE_ALLOCER.alloc()   
     }
 }
 
@@ -87,7 +99,7 @@ impl AllPages {
         if *page > self.current {
             let a = self.free.iter().find(|x| **x == *page);
             match a {
-                Some(value) => panic!("page : {:#x} not alloced",(*value).to_addr().0),
+                Some(value) => panic!("page : {:#x} not alloced",(*value).to_pa().0),
                 None => {}
             }
         }
@@ -143,14 +155,19 @@ impl Drop for PageGurd {
     }
 }
 
-pub fn page_init(){
+pub fn init(){
     PAGE_ALLOCER.init();
 }
 
 impl Deref for PageGurd {
     //type Target = T;
-    type Target = usize;
+    type Target = Arc<PPageNum>;
     fn deref(&self) -> &Self::Target {
-        &self.inner.0
+        &self.inner
     }
 }
+// impl DerefMut for PageGurd {
+//     fn deref_mut(&mut self) -> &mut T {
+//         self.inner.get_mut()
+//     }
+// }

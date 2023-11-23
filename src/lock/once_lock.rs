@@ -39,7 +39,7 @@ impl<T> OnceLock<T> {
     }
 
     #[inline]
-    pub fn get_mut(&self) -> Option<&T>{
+    pub fn get_mut(&self) -> Option<&mut T>{
         if self.is_initialize(){
             Some(unsafe {
                 self.get_unchecked_mut()

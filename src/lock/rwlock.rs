@@ -1,6 +1,4 @@
-use core::{sync::atomic::{AtomicPtr, AtomicUsize, AtomicBool,Ordering}, cell::UnsafeCell, hint::spin_loop, ops::{Deref, DerefMut}};
-
-use crate::process::Cpu;
+use core::{sync::atomic::{AtomicUsize, AtomicBool,Ordering}, cell::UnsafeCell, hint::spin_loop, ops::{Deref, DerefMut}};
 
 pub struct RwLock<T>{
     reader: AtomicUsize,
@@ -53,7 +51,7 @@ impl<T> RwLock<T> {
     }
 
     pub fn try_read(&self) -> Option<ReadGurd<T>>{        
-        let value = 
+        let _value = 
             self.reader.fetch_add(1, Ordering::Acquire);
         if self.writer.load(Ordering::Relaxed) {
             self.reader.fetch_sub(1, Ordering::Release);

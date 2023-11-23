@@ -12,7 +12,7 @@ static ALLOCATOR: LockedHeap = LockedHeap::empty();
 
 pub static mut HEAP_SPACE: [u8; HEAP_SIZE] = [0; HEAP_SIZE];
 
-pub fn init_heap() {
+pub fn init() {
     let mut heap_start =unsafe{HEAP_SPACE.as_ptr() as usize};
     
     let heap_end =( heap_start+HEAP_SIZE) & !(MIN_HEAP-1);

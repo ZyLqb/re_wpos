@@ -1,5 +1,5 @@
 use alloc::sync::Arc;
-use crate::riscv::{sv39,pgrounddown,pgroundup, PGSIZE};
+use crate::riscv::{sv39,pgrounddown,pgroundup, PGSIZE,pteflags::*};
 
 #[derive(Clone,Copy,Ord,PartialEq, PartialOrd,Eq)]
 pub struct PAddress(pub usize);
@@ -12,6 +12,8 @@ pub struct PPageNum(pub usize);
 
 #[derive(Clone,Copy,Ord,PartialEq, PartialOrd,Eq)]
 pub struct VPageNum(pub usize);
+#[derive(Clone,Copy,Ord,PartialEq, PartialOrd,Eq)]
+pub struct PageTableEntry(pub usize);
 
 impl From<usize> for PAddress {
     fn from(value: usize) -> Self {
@@ -60,25 +62,24 @@ impl From<usize> for PPageNum {
 
 
 impl PPageNum {
-    pub fn to_addr(self) -> PAddress{
+    pub fn to_pa(self) -> PAddress{
         let a: PAddress = (self.0 * PGSIZE).into();
         a
-        
     }
     pub fn add_one(&self) -> PPageNum{
         PPageNum(self.0 + 1)
     }
 
-    pub fn get_pte_array(&self) -> &'static mut [PPageNum]{
-        self.to_addr().get_pte_array()
+    pub fn get_pte_array(&self) -> &'static mut [PageTableEntry]{
+        self.to_pa().get_pte_array()
     }
 
     pub fn get_bytes_array(&self) -> &'static mut [u8]{
-        self.to_addr().get_bytes_array()
+        self.to_pa().get_bytes_array()
     }
 
     pub fn get_mut<T>(&self) -> &'static mut T{
-        let pa: PAddress = self.to_addr();
+        let pa: PAddress = self.to_pa();
         unsafe{ 
             (pa.0 as *mut T).as_mut().unwrap()
         }
@@ -87,12 +88,12 @@ impl PPageNum {
 
 impl PAddress {
 
-    pub fn get_pte_array(&self) -> &'static mut [PPageNum] {
+    pub fn get_pte_array(&self) -> &'static mut [PageTableEntry] {
         let pa: usize = self.clone().into();
         let pa: PAddress = pa.into();
         unsafe{
             core::slice::from_raw_parts_mut(
-                pa.0 as *mut PPageNum,
+                pa.0 as *mut PageTableEntry,
                 512
             )
         }
@@ -113,6 +114,43 @@ impl PAddress {
             (pa.0 as *mut T).as_mut().unwrap()
         }
     }
+}
 
-    
+impl PageTableEntry{
+    pub fn get_pte_array(&self) -> &'static mut [PageTableEntry] {
+        let pa: usize = self.0;
+        let pa: PAddress = pa.into();
+        unsafe{
+            core::slice::from_raw_parts_mut(
+                pa.0 as *mut PageTableEntry,
+                512
+            )
+        }
+    }
+   
+    pub fn get_mut<T>(&self) -> &'static mut T{
+        let pa: usize = self.0;
+        let pa: PAddress = pa.into();
+        //println!("pa : {:#x}",pa.0);
+        unsafe{ 
+            (pa.0 as *mut T).as_mut().unwrap()
+        }
+    }
+
+    pub fn set(&mut self, pa: usize, prem: usize) {
+        //pa to pte
+        self.0 = ((pa >> 12) << 10) | prem;
+    }
+
+    pub fn is_v(&self) -> bool {
+        self.0 & PTE_V != 0
+    }
+
+    pub fn flags(&self) -> usize {
+        self.0 & 0x3FF
+    }
+
+    pub fn to_pa(&self) -> PAddress {
+        ((self.0 >> 10) << 12).into()
+    }
 }

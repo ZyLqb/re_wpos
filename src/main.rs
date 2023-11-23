@@ -16,15 +16,10 @@ mod vm;
 mod memlayout;
 #[macro_use]
 extern crate alloc;
+
 use core::{arch::global_asm, sync::atomic::{AtomicBool,Ordering}};
-use alloc::{sync::Arc};
-use lock::Once;
-use process::NCPU;
-use lock::LazyLock;
-use lock::{RwLock,ReadGurd,WriteGurd};
-use kalloc::{pages::*,pagealloc::*};
-use alloc::collections::BTreeSet;
-use crate::{lock::SpinLock, process::cpu::CPUS, sbi::r_tp, riscv::intr_off, kalloc::pagealloc};
+use crate::kalloc::pagealloc;
+use sbi::r_tp;
 static STARTED: AtomicBool = AtomicBool::new(false);
 //将entry.rs 加入代码
 global_asm!(include_str!("entry.s"));
@@ -34,18 +29,20 @@ fn rust_main() {
     sbi::thread_start();
     let thread_id = r_tp();
     if thread_id == 0 {
-        //utiles::clear_bss();
         //heap init 
-        kalloc::init_heap();
+        kalloc::init();
         //page alloc init
-        pagealloc::page_init();
+        pagealloc::init();
+        //kvm init
+        vm::k_init();
+        //install pagetable
+        vm::kvminithart();
 
-        let page = PAGE_ALLOCER.alloc();
-        println!("pages {:#x}",*page);
         println!("Thread {} start !!!",thread_id);
         STARTED.store(true, Ordering::SeqCst);
     }else {
         loop {if STARTED.load(Ordering::SeqCst){break;}}
+        vm::kvminithart();
         println!("Thread {} start !!!",thread_id);
     }
     loop {}

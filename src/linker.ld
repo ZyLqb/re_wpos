@@ -10,11 +10,12 @@ SECTIONS
     stext = .;
     .text : {
         *(.text.entry)
+        . = ALIGN(0x1000);
         *(.text .text.*)
     }
-
-    . = ALIGN(4K);
+    . = ALIGN(0x1000);
     etext = .;
+    . = ALIGN(0x1000);
     srodata = .;
     .rodata : {
         *(.rodata .rodata.*)
